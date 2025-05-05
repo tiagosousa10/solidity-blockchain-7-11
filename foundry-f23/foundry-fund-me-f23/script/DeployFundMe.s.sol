@@ -3,11 +3,18 @@ pragma solidity ^0.8.18;
 
 import {Script} from "forge-std/Script.sol";
 import {FundMe} from "../src/FundMe.sol";
+import {HelperConfig} from "./HelperConfig.s.sol";
 
 contract DeployFundMe is Script {
     function run() external returns (FundMe) {
+        //before broadcast -> not a "real" transaction
+        HelperConfig helperConfig = new HelperConfig(); // Deploys the HelperConfig contract
+        address ethUsdPriceFeed = helperConfig.activeNetworkConfig();
+
+        //after broadcast -> "real" transaction
         vm.startBroadcast();
-        FundMe fundMe = new FundMe(0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43); // Deploys the FundMe contract
+        //Mock
+        FundMe fundMe = new FundMe(ethUsdPriceFeed); // Deploys the FundMe contract
         vm.stopBroadcast();
         return fundMe;
     }
