@@ -10,7 +10,7 @@ contract FundMeTest is Test {
     function setUp() external {
         // us -> fundMeTest -> FundMe
 
-        fundMe = new FundMe();
+        fundMe = new FundMe(0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43);
     }
 
     function testMinimumDollarIsFive() public {
