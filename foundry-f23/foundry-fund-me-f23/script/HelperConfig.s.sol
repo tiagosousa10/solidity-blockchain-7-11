@@ -19,7 +19,9 @@ contract HelperConfig {
 
     constructor() {
         if (block.chainid == 11155111) {
-            activeNetworkConfig = getAnvilEthConfig();
+            activeNetworkConfig = getSepoliaEthConfig();
+        } else if (block.chainid == 1) {
+            activeNetworkConfig = getMainnetEthConfig();
         } else {
             activeNetworkConfig = getAnvilEthConfig();
         }
