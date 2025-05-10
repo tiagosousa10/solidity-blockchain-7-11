@@ -36,8 +36,7 @@ contract FundMeTest is Test {
         fundMe.fund();
     }
 
-    function testFundUpdatesFundedDataStructure public {
+    function testFundUpdatesFundedDataStructure() public {
         fundMe.fund({value: 1e18});
-        
     }
 }
