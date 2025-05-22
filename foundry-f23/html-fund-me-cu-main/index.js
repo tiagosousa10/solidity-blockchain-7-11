@@ -10,7 +10,6 @@ withdrawButton.onclick = withdraw
 fundButton.onclick = fund
 balanceButton.onclick = getBalance
 
-//test
 
 async function connect() {
   if (typeof window.ethereum !== "undefined") {
