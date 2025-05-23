@@ -23,6 +23,7 @@
 pragma solidity ^0.8.18;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
 /**
  * @title A sample Raffle Contract
@@ -30,22 +31,23 @@ import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interface
  * @notice This is for creating a sample raffle
  * @dev Implements Chainlink VRFv2
  */
-contract Raffle {
+contract Raffle is VRFConsumerBaseV2 {
     error Rafle__NotEnoughEthSent();
 
     //state variables
-    uint256 private constant REQUEST_CONFIRMATION = 3;
-    uint256 private constant NUM_WORDS = 1;
+    uint16 private constant REQUEST_CONFIRMATION = 3;
+    uint32 private constant NUM_WORDS = 1;
 
     uint256 private immutable i_entranceFee;
     uint256 private immutable i_interval; // duration of the lottery in seconds
-    address private immutable i_vrfCoordinator;
+    VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
 
     address payable[] private s_players; //array of addresses -> list of players
     uint256 private s_lastTimeStamp;
+    address private s_recentWinner;
 
     event EnteredRaffle(address indexed player);
 
@@ -56,11 +58,11 @@ contract Raffle {
         bytes32 gasLane,
         uint64 subscriptionId,
         uint32 callbackGasLimit
-    ) {
+    ) VRFConsumerBaseV2(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
         s_lastTimeStamp = block.timestamp;
-        i_vrfCoordinator = vrfCoordinator;
+        i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinator);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
@@ -80,13 +82,28 @@ contract Raffle {
             revert();
         }
         // get a random winner with chainlink vrf
-        uint256 requestId = i_vrfCoordinator.requestRandomWords(
+        uint256 requestId = i_vrfCoordinator.requestRandomWords( // request to chainlink
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATION,
             i_callbackGasLimit,
             NUM_WORDS
         );
+    }
+
+    function fulfillRandomWords(
+        uint256 requestId,
+        uint256[] memory randomWords
+    ) internal override {
+        uint256 indexOfWinner = randomWords[0] % s_players.length;
+        address payable winner = s_players[indexOfWinner];
+        s_recentWinner = winner;
+
+        (bool success, ) = winner.call{value: address(this).balance}("");
+
+        if (!success) {
+            revert();
+        }
     }
 
     function getEntranceFee() external view returns (uint256) {
