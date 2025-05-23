@@ -31,10 +31,16 @@ pragma solidity ^0.8.18;
 contract Raffle {
     error Rafle__NotEnoughEthSent();
     uint256 private immutable i_entranceFee;
+    uint256 private immutable i_interval; // duration of the lottery in seconds
     address payable[] private s_players; //array of addresses -> list of players
+    uint256 private s_lastTimeStamp;
 
-    constructor(uint256 entranceFee) {
+    event EnteredRaffle(address indexed player);
+
+    constructor(uint256 entranceFee, uint256 interval) {
         i_entranceFee = entranceFee;
+        i_interval = interval;
+        s_lastTimeStamp = block.timestamp;
     }
 
     function enterRaffle() external payable {
@@ -43,10 +49,14 @@ contract Raffle {
             revert Rafle__NotEnoughEthSent();
         }
         s_players.push(payable(msg.sender));
+        emit EnteredRaffle(msg.sender);
     }
 
-    function pickWinner() public {
-        // use Chainlink VRFv2
+    function pickWinner() external {
+        if (block.timestamp - s_lastTimeStamp <= i_interval) {
+            revert();
+        }
+        // get a random winner with chainlink vrf
     }
 
     function getEntranceFee() external view returns (uint256) {
