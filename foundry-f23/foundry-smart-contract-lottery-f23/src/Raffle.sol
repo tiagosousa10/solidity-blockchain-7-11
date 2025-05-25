@@ -33,6 +33,14 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
  */
 contract Raffle is VRFConsumerBaseV2 {
     error Rafle__NotEnoughEthSent();
+    error Rafle__TransferFailed();
+    error Raffle__RaffleIsNotOpen();
+
+    //type declarations
+    enum RaffleState {
+        OPEN, //0
+        CALCULATING //1
+    }
 
     //state variables
     uint16 private constant REQUEST_CONFIRMATION = 3;
@@ -48,6 +56,7 @@ contract Raffle is VRFConsumerBaseV2 {
     address payable[] private s_players; //array of addresses -> list of players
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
+    RaffleState private s_raffleState;
 
     event EnteredRaffle(address indexed player);
 
@@ -61,11 +70,13 @@ contract Raffle is VRFConsumerBaseV2 {
     ) VRFConsumerBaseV2(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
-        s_lastTimeStamp = block.timestamp;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinator);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
+
+        s_raffleState = RaffleState.OPEN; // starts with open
+        s_lastTimeStamp = block.timestamp;
     }
 
     function enterRaffle() external payable {
@@ -73,14 +84,22 @@ contract Raffle is VRFConsumerBaseV2 {
         if (msg.value < i_entranceFee) {
             revert Rafle__NotEnoughEthSent();
         }
+
+        if (s_raffleState != RaffleState.OPEN) {
+            revert Raffle__RaffleIsNotOpen();
+        }
+
         s_players.push(payable(msg.sender));
         emit EnteredRaffle(msg.sender);
     }
 
     function pickWinner() external {
+        // if the raffle is not open, revert
         if (block.timestamp - s_lastTimeStamp <= i_interval) {
             revert();
         }
+
+        s_raffleState = RaffleState.CALCULATING;
         // get a random winner with chainlink vrf
         uint256 requestId = i_vrfCoordinator.requestRandomWords( // request to chainlink
             i_gasLane,
@@ -95,14 +114,17 @@ contract Raffle is VRFConsumerBaseV2 {
         uint256 requestId,
         uint256[] memory randomWords
     ) internal override {
+        // pick a random winner
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
+        s_raffleState = RaffleState.OPEN;
 
+        // give the winner the money
         (bool success, ) = winner.call{value: address(this).balance}("");
 
         if (!success) {
-            revert();
+            revert Rafle__TransferFailed();
         }
     }
 
