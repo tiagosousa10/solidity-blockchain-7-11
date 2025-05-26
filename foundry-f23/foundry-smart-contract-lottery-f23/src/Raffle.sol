@@ -125,7 +125,7 @@ contract Raffle is VRFConsumerBaseV2 {
 
         s_raffleState = RaffleState.CALCULATING;
         // get a random winner with chainlink vrf
-        uint256 requestId = i_vrfCoordinator.requestRandomWords( // request to chainlink
+        i_vrfCoordinator.requestRandomWords( // request to chainlink
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATION,
@@ -135,7 +135,7 @@ contract Raffle is VRFConsumerBaseV2 {
     }
 
     function fulfillRandomWords(
-        uint256 requestId,
+        uint256 /*requestId*/,
         uint256[] memory randomWords
     ) internal override {
         // pick a random winner
