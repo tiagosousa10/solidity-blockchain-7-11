@@ -5,17 +5,16 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract CreateSubscription is Script {
-    function createSubscriptionUsingConfig() external returns (uint64) {
+    function createSubscriptionUsingConfig() public returns (uint64) {
         HelperConfig helperConfig = new HelperConfig();
-        (, , address vrfCoordinator, , , , ) = helperConfig
-            .activeNetworkConfig();
+        (, , address vrfCoordinator, , , ) = helperConfig.activeNetworkConfig();
 
         return createSubscription(vrfCoordinator);
     }
 
     function createSubscription(
         address vrfCoordinator
-    ) external returns (uint64) {
+    ) public returns (uint64) {
         console.log("Creating Subscription on ChainId: ", block.chainid);
         vm.startBroadcast();
         uint64 subId = VRFCoordinatorV2Mock(vrfCoordinator)
@@ -25,7 +24,7 @@ contract CreateSubscription is Script {
         return subId;
     }
 
-    function run() external returns (uint256, address) {
+    function run() external returns (uint256) {
         return createSubscriptionUsingConfig();
     }
 }
