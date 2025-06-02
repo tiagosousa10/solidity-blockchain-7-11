@@ -16,7 +16,8 @@ contract DeployRaffle is Script {
             address vrfCoordinator,
             bytes32 gasLane,
             uint64 subscriptionId,
-            uint32 callbackGasLimit
+            uint32 callbackGasLimit,
+            address link // Only for Sepolia, not used in Anvil
         ) = helperConfig.activeNetworkConfig();
 
         if (subscriptionId == 0) {
