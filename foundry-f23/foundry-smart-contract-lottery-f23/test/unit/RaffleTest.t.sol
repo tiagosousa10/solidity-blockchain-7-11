@@ -5,6 +5,7 @@ import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract RaffleTest is Test {
     //events
@@ -131,5 +132,28 @@ contract RaffleTest is Test {
         ); // expect the revert
 
         raffle.performUpkeep(""); // perform upkeep to change the state to calculating
+    }
+
+    modifier raffleEnteredAndTimePassed() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}(); // player enters the raffle
+        vm.warp(block.timestamp + interval + 1); // move time forward
+        vm.roll(block.number + 1); // move to the next block
+        _; // continue with the rest of the test
+    }
+
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId()
+        public
+        raffleEnteredAndTimePassed
+    {
+        //act
+        vm.recordLogs(); // save the logs
+        raffle.performUpkeep(""); // perform upkeep to change the state to calculating -> emit a requestId
+        Vm.Log[] memory entries = vm.getRecordedLogs(); // get the logs
+        bytes32 requestId = entries[1].topics[0]; // get the requestId from the logs
+
+        Raffle.RaffleState rState = raffle.getRaffleState(); // get the raffle state
+
+        assert(uint256(requestId) > 0); // requestId should be greater than 0
     }
 }
