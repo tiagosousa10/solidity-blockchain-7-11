@@ -100,4 +100,36 @@ contract RaffleTest is Test {
         //assert
         assert(upkeepNeeded == false); // upkeep should not be needed
     }
+
+    //testCheckUpkeepReturnsFalseIfEnoughTimeHasntPassed
+
+    function testPerformUpkeepCanOnlyRunOfCheckUpkeepIsTrue() public {
+        // arrange -> we need to enter the raffle
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}(); // player enters the raffle
+        vm.warp(block.timestamp + interval + 1); // move time forward
+        vm.roll(block.number + 1); // move to the next block
+
+        //act -> we need to call performUpkeep
+        raffle.performUpkeep(""); // perform upkeep to change the state to calculating
+    }
+
+    function testPerformUpkeepRevertsIfCheckUpkeepIsFalse() public {
+        // arrange -> we need to enter the raffle
+        uint256 currentBalance = 0;
+        uint256 numPlayers = 0;
+        uint256 raffleState = 0; // 0 is OPEN state
+
+        //act / assert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Raffle.Raffle__UpkeepNotNeeded.selector,
+                currentBalance,
+                numPlayers,
+                raffleState
+            )
+        ); // expect the revert
+
+        raffle.performUpkeep(""); // perform upkeep to change the state to calculating
+    }
 }
