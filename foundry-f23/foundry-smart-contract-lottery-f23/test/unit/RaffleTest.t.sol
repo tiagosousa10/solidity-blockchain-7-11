@@ -36,7 +36,9 @@ contract RaffleTest is Test {
             gasLane,
             subscriptionId,
             callbackGasLimit,
-            link // Only for Sepolia, not used in Anvil
+            link,
+            // Only for Sepolia, not used in Anvil
+
         ) = helperConfig.activeNetworkConfig();
         vm.deal(PLAYER, STARTING_USER_BALANCE); // cheat code to give the player some ETH
     }
@@ -158,9 +160,16 @@ contract RaffleTest is Test {
         assert(uint256(requestId) > 0); // requestId should be greater than 0
     }
 
+    modifier skipFork() {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+
     function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(
         uint256 randomRequestId
-    ) public raffleEnteredAndTimePassed {
+    ) public raffleEnteredAndTimePassed skipFork {
         // arrange -> we need to enter the raffle
         vm.expectRevert("nonexistent request"); // expect the revert
         VRFCoordinatorV2Mock(vrfCoordinator).fulfillRandomWords(
@@ -172,6 +181,7 @@ contract RaffleTest is Test {
     // function testFulfillRandomWordsPicksAWinnerResetsAndSendsMoney()
     //     public
     //     raffleEnteredAndTimePassed
+    //     skipFork
     // {
     //     uint256 additionalEntrants = 5;
     //     uint256 startingIndex = 1;
